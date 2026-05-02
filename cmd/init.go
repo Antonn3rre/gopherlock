@@ -9,6 +9,11 @@ import (
 	"strings"
 	"syscall"
 	"log"
+	"crypto/rand"
+	"crypto/sha256"
+	"gopherlock/internal"
+	"encoding/json"
+	"os"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -25,6 +30,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// 1. Asks for password
 		fmt.Println("Initialisation...")
 
 		masterPassword := ""
@@ -54,6 +61,22 @@ to quickly create a Cobra application.`,
 		break
 	}
 	fmt.Printf("Your password is: |%s|\n", masterPassword)
+
+
+	// 2. Create salt
+	salt:= make([]byte, 16)
+	rand.Read(salt)
+	// TODO: check error
+
+	// Create Master Key : (masterPassword + salt --> Argon2id)
+	masterKey := internal.DeriveKey([]byte(masterPassword), []byte(salt))
+	// Hash masterKey
+	hashedMasterKey := sha256.Sum256(masterKey)
+
+	// 3. Create the vault file
+	v:= internal.Vault{ Salt: salt, CheckHash: hashedMasterKey[:], Entries: []internal.Entry{} }
+	data, _ := json.MarshalIndent(v, "", " ")
+	os.WriteFile("vault.json", data, 0600)
 	},
 }
 
