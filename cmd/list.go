@@ -6,9 +6,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"gopherlock/internal"
-
+	"io/ioutil"
+	"log"
+	"encoding/json"
 	"github.com/spf13/cobra"
 )
 
@@ -28,19 +29,19 @@ to quickly create a Cobra application.`,
 		// Read file
 		content, err := ioutil.ReadFile("vault.json")
 		if err != nil {
-			log.Fatal("Error when opening file: ", ,err)
+			log.Fatal("Error when opening file: ", err)
 		}
 
 		// Extract payload
 		var payload internal.Vault
-		err = jsonUnmarshal(content, &payload)
+		err = json.Unmarshal(content, &payload)
 		if err != nil {
 			log.Fatal("Error during Unmarshal(): ", err)
 		}
 		
 		// Print list
 		for i := 0; i < len(payload.Entries); i++ {
-			fmt.Println(arr[i].Account)
+			fmt.Println(payload.Entries[i].Account)
 		}
 	},
 }

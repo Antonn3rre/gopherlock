@@ -1,19 +1,18 @@
 /*
 Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
-	"fmt"
-	"strings"
-	"syscall"
-	"log"
 	"crypto/rand"
 	"crypto/sha256"
-	"gopherlock/internal"
 	"encoding/json"
+	"fmt"
+	"gopherlock/internal"
+	"log"
 	"os"
+	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -37,50 +36,51 @@ to quickly create a Cobra application.`,
 		masterPassword := ""
 
 		for {
-		fmt.Println("Please provide your master key: ")
-		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-    if err != nil {
-        log.Fatal(err)
-    }
-    password := strings.TrimSpace(string(bytePassword))
-		if password == "" {
-			continue
+			fmt.Println("Please provide your master password: ")
+			bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				log.Fatal(err)
+			}
+			password := strings.TrimSpace(string(bytePassword))
+			if password == "" {
+				continue
+			}
+
+			fmt.Println("\nPlease provide your master passwrd: (again)")
+			bytePassword, err = term.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				log.Fatal(err)
+			}
+			copiedPassword := strings.TrimSpace(string(bytePassword))
+			if copiedPassword != password {
+				fmt.Println("Error: the passwords do not match")
+				continue
+			}
+			masterPassword = password
+			break
+		}
+		fmt.Printf("Your password is: |%s|\n", masterPassword)
+
+		// 2. Create salt
+		salt := make([]byte, 16)
+		_, err := rand.Read(salt)
+		if err != nil {
+			panic(err.Error())
 		}
 
-		fmt.Println("\nPlease provide your master key: (again)")
-		bytePassword, err = term.ReadPassword(int(syscall.Stdin))
-    if err != nil {
-        log.Fatal(err)
-    }
-		copiedPassword := strings.TrimSpace(string(bytePassword))
-		if copiedPassword != password {
-			fmt.Println("Error: the passwords do not match")
-			continue
-		}
-		masterPassword = password
-		break
-	}
-	fmt.Printf("Your password is: |%s|\n", masterPassword)
+		// Create Master Key : (masterPassword + salt --> Argon2id)
+		masterKey := internal.DeriveKey([]byte(masterPassword), []byte(salt))
+		// Hash masterKey
+		hashedMasterKey := sha256.Sum256(masterKey)
 
-
-	// 2. Create salt
-	salt:= make([]byte, 16)
-	rand.Read(salt)
-	// TODO: check error
-
-	// Create Master Key : (masterPassword + salt --> Argon2id)
-	masterKey := internal.DeriveKey([]byte(masterPassword), []byte(salt))
-	// Hash masterKey
-	hashedMasterKey := sha256.Sum256(masterKey)
-
-	// 3. Create the vault file
-	v:= internal.Vault{ Salt: salt, CheckHash: hashedMasterKey[:], Entries: []internal.Entry{} }
-	data, _ := json.MarshalIndent(v, "", " ")
-	os.WriteFile("vault.json", data, 0600)
+		// 3. Create the vault file
+		v := internal.Vault{Salt: salt, CheckHash: hashedMasterKey[:], Entries: []internal.Entry{}}
+		data, _ := json.MarshalIndent(v, "", " ")
+		os.WriteFile("vault.json", data, 0600)
 	},
 }
 
-//func init() -> enregistre la commande aupres de la racine + configure les options
+// func init() -> enregistre la commande aupres de la racine + configure les options
 func init() {
 	rootCmd.AddCommand(initCmd)
 
