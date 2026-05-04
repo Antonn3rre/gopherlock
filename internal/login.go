@@ -29,7 +29,7 @@ func Login() []byte {
 	checkHash := payload.CheckHash
 
 	// Ask for master password
-	fmt.Println("\nPlease provide your master passwrd: (again)")
+	fmt.Print("\nPlease provide your master passwrd: ")
 	password, err := term.ReadPassword(int(syscall.Stdin))
   if err != nil {
   	log.Fatal(err)
@@ -46,5 +46,6 @@ func Login() []byte {
 		// fatal error
 	}
 
+	fmt.Println("\nLogin successfull")
 	return checkHash
 }

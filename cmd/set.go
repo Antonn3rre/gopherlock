@@ -32,7 +32,6 @@ to quickly create a Cobra application.`,
 
 		// Login
 		hashedMaster := internal.Login()
-		fmt.Println("Login successfull")
 
 		// Init scanner to read input
 		scanner := bufio.NewScanner(os.Stdin)
