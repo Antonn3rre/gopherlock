@@ -4,15 +4,16 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"gopherlock/internal"
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"golang.org/x/term"
-	"log"
-	"syscall"
-	"bufio"
-	"os"
+	"gopherlock/internal"
 	"io/ioutil"
-	"encoding/json"
+	"log"
+	"os"
+	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -20,15 +21,9 @@ import (
 // setCmd represents the set command
 var setCmd = &cobra.Command{
 	Use:   "set",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Add a new password entry to the vault.",
+	Long: "Add a new password entry to the vault.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("set called")
 
 		// Login
 		hashedMaster := internal.Login()
@@ -36,17 +31,17 @@ to quickly create a Cobra application.`,
 		// Init scanner to read input
 		scanner := bufio.NewScanner(os.Stdin)
 		var account, username string
-		
+
 		// Ask about the account info
-		fmt.Println("Account name (ex: Gmail, Wiki): ")
+		fmt.Print("Account name (ex: Gmail, Wiki): ")
 		if scanner.Scan() {
-    	account = scanner.Text()
+			account = scanner.Text()
 		}
 
 		// Username
 		fmt.Println("Username: ")
 		if scanner.Scan() {
-    	username = scanner.Text()
+			username = scanner.Text()
 		}
 
 		// Password
@@ -55,8 +50,6 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		// TODO: Check doublon account + password
 
 		// encrypt
 		nonce, ciphertext := internal.Encrypt(hashedMaster, password)
@@ -72,15 +65,39 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatal("Error during Unmarshal(): ", err)
 		}
-		
+
 		newEntry := &internal.Entry{
-			Account: account,
-			Username: username,
+			Account:    account,
+			Username:   username,
 			Ciphertext: ciphertext,
-			Nonce: nonce,
+			Nonce:      nonce,
 		}
 
-		payload.Entries = append(payload.Entries, *newEntry)
+		existingIndex := -1
+		for i, entry := range payload.Entries {
+			if entry.Account == account && entry.Username == username {
+				existingIndex = i
+				break
+			}
+		}
+
+		if existingIndex != -1 {
+			fmt.Print("A password already exists for this account and username, update it? (y/n): ")
+			var confirm string
+			if scanner.Scan() {
+				confirm = strings.TrimSpace(strings.ToLower(scanner.Text()))
+			}
+
+			if confirm != "y" {
+				fmt.Println("Cancelled.")
+				return
+			}
+
+			payload.Entries[existingIndex] = *newEntry
+		} else {
+			payload.Entries = append(payload.Entries, *newEntry)
+		}
+
 		data, _ := json.MarshalIndent(payload, "", " ")
 		os.WriteFile("vault.json", data, 0600)
 	},

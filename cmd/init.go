@@ -21,13 +21,8 @@ import (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Initialize a new vault with a master password. This creates the `vault.json` file which stores all your credentials securely.",
+	Long: "Initialize a new vault with a master password. This creates the `vault.json` file which stores all your credentials securely.",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// 1. Asks for password
@@ -36,7 +31,7 @@ to quickly create a Cobra application.`,
 		masterPassword := ""
 
 		for {
-			fmt.Println("Please provide your master password: ")
+			fmt.Print("Please provide your master password: ")
 			bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 			if err != nil {
 				log.Fatal(err)
@@ -46,7 +41,7 @@ to quickly create a Cobra application.`,
 				continue
 			}
 
-			fmt.Println("\nPlease provide your master passwrd: (again)")
+			fmt.Print("\nPlease provide your master password (again): ")
 			bytePassword, err = term.ReadPassword(int(syscall.Stdin))
 			if err != nil {
 				log.Fatal(err)
